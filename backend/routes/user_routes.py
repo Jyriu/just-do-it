@@ -7,7 +7,7 @@ user_bp = Blueprint('user_bp', __name__)
 @user_bp.route('/register', methods=['POST'])
 def register():
     # get data send by user
-    data = requests.get_json()
+    data = request.get_json()
 
     # check email or username duplicate exists
     if User.query.filter_by(email=data['email']).first():

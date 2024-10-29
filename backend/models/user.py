@@ -1,6 +1,6 @@
 # Description: User model for the application.
 
-from models import db
+from extensions import db
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)

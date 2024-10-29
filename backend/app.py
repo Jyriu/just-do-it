@@ -9,7 +9,7 @@ app.config.from_object(Config)
 
 # initialize extensions
 db.init_app(app)
-bcrypt = Bcrypt(app)
+bcrypt.init_app(app)
 
 # blueprints
 from routes.user_routes import user_bp
