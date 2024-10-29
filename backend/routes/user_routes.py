@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from extensions import db, bcrypt
 from models import User
+from flask_jwt_extended import create_access_token
 
 user_bp = Blueprint('user_bp', __name__)
 
@@ -24,3 +25,19 @@ def register():
     db.session.commit()
 
     return jsonify({'message': 'User successfully registered'}), 201
+
+@user_bp.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+
+    # check email then password
+    user = User.query.filter_by(email=data['email']).first()
+    if not user:
+        return jsonify({'error': 'Invalid email'}), 401
+    if not bcrypt.check_password_hash(user.password_hash, data['password']):
+        return jsonify({'error': 'Invalid password'}), 401
+    
+    # create jwt token
+    token = create_access_token(identity=user.id)
+
+    return jsonify({'token': token}), 200
