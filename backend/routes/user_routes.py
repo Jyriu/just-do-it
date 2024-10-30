@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from extensions import db, bcrypt
 from models import User
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
 user_bp = Blueprint('user_bp', __name__)
 
@@ -41,3 +41,18 @@ def login():
     token = create_access_token(identity=user.id)
 
     return jsonify({'token': token}), 200
+
+@user_bp.route('/profile', methods=['GET'])
+@jwt_required()
+def profile():
+
+    # get user from token
+    user_id = get_jwt_identity()
+    
+    # get user from db
+    user = User.query.get(user_id)
+
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    return jsonify({'username': user.username, 'email': user.email}), 200

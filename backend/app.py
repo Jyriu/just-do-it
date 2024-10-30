@@ -2,6 +2,13 @@
 from flask import Flask
 from config import Config
 from extensions import db, bcrypt, jwt
+from dotenv import load_dotenv
+from routes.user_routes import user_bp
+
+# load environment variables
+# load_dotenv()
+
+# print("DATABASE_URL: ", os.getenv('DATABASE_URL'))
 
 # initialize app and config
 app = Flask(__name__)
@@ -16,7 +23,6 @@ bcrypt.init_app(app)
 jwt.init_app(app)
 
 # blueprints
-from routes.user_routes import user_bp
 app.register_blueprint(user_bp)
 
 if __name__ == '__main__':
