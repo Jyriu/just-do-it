@@ -1,9 +1,11 @@
 # entry point for the app, initialize the app, set up routes, connect database
+import os
 from flask import Flask
 from config import Config
 from extensions import db, bcrypt, jwt
 from dotenv import load_dotenv
 from routes.user_routes import user_bp
+from routes.post_routes import post_bp
 
 # load environment variables
 # load_dotenv()
@@ -24,6 +26,11 @@ jwt.init_app(app)
 
 # blueprints
 app.register_blueprint(user_bp)
+app.register_blueprint(post_bp)
+
+# create database tables
+with app.app_context():
+    db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=True)
