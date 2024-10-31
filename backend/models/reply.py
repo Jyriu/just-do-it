@@ -12,3 +12,13 @@ class Reply(db.Model):
 
     def __repr__(self):
         return f"<Reply by User {self.user_id} on Post {self.post_id}>" if not self.parent_reply_id else f"<Reply to Reply {self.parent_reply_id}>"
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'post_id': self.post_id,
+            'parent_reply_id': self.parent_reply_id,
+            'content': self.content,
+            'created_at': self.created_at.isoformat()
+        }

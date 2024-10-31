@@ -61,3 +61,26 @@ def reply_to_reply():
     db.session.commit()
 
     return jsonify({'message': 'Reply to reply successfully created'}), 201
+
+@post_bp.route('/posts', methods=['GET'])
+def get_posts():
+    # get params for pagination
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 10, type=int)
+
+    # get paginated posts
+    posts = Post.query.paginate(page=page, per_page=limit)
+
+    # check if include_replies is true then include replies
+    include_replies = request.args.get('include_replies', 'false').lower() == 'true'
+    return jsonify({
+        'posts': [post.to_dict(include_replies=include_replies) for post in posts.items],
+        'total_pages': posts.pages,
+        'total_items': posts.total,
+        'current_page': posts.page,
+        'per_page': posts.per_page,
+        'has_next': posts.has_next,
+        'has_prev': posts.has_prev
+    })
+
+    
