@@ -31,7 +31,7 @@ def login():
     data = request.get_json()
 
     # check email then password
-    user = User.query.filter_by(email=data['email']).first()
+    user = User.query.filter_by(username=data['username']).first()
     if not user:
         return jsonify({'error': 'Invalid email'}), 401
     if not bcrypt.check_password_hash(user.password_hash, data['password']):
@@ -40,7 +40,7 @@ def login():
     # create jwt token
     token = create_access_token(identity=user.id)
 
-    return jsonify({'token': token}), 200
+    return jsonify({'access_token': token}), 200
 
 @user_bp.route('/profile', methods=['GET'])
 @jwt_required()
