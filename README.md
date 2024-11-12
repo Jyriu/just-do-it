@@ -1,87 +1,87 @@
-# Just do IT : Un Forum Collaboratif pour les passionnés d'IT
+# Just do IT: A Collaborative Forum for IT Enthusiasts
 
-Bienvenue sur **Just do IT**, un projet de forum collaboratif orienté autour de la communauté IT. Ce projet est actuellement en développement et vise à créer une plateforme où les utilisateurs peuvent partager des posts, demander de l'aide, échanger des conseils et participer à des discussions sur des thèmes liés à l'informatique.
+Welcome to **Just do IT**, a collaborative forum project aimed at the IT community. This project is currently under development and aims to create a platform where users can share posts, ask for help, exchange advice, and participate in discussions related to various IT topics.
 
-## Fonctionnalités Actuelles
-Voici une liste des fonctionnalités déjà implémentées ou en cours de développement :
+## Current Features
+Here is a list of features that have already been implemented or are under development:
 
-- **Enregistrement et connexion des utilisateurs** : Chaque utilisateur peut créer un compte, se connecter et obtenir un jeton JWT pour l'authentification.
-- **Création de posts** : Les utilisateurs peuvent créer des posts pour demander de l'aide, donner des conseils, ou démarrer des discussions sur des sujets précis.
-- **Réponses aux posts** : Possibilité de répondre aux posts et d'avoir des discussions.
-- **Pagination des posts** : Affichage des posts avec un système de pagination pour une meilleure navigation.
-- **System de likes (en cours de développement)** : Les utilisateurs pourront aimer des posts et des réponses pour indiquer leur pertinence et popularité.
-- **Statistiques et gamification** : Un système de points et de leaderboard est prévu pour encourager l’engagement et la qualité des contributions.
+- **User Registration and Login**: Each user can create an account, log in, and receive a JWT token for authentication.
+- **Post Creation**: Users can create posts to ask for help, share advice, or start discussions on specific topics.
+- **Reply to Posts**: Users can reply to posts and engage in discussions.
+- **Post Pagination**: Posts are displayed with a pagination system for better navigation.
+- **Like System (in progress)**: Users will be able to like posts and replies to indicate their relevance and popularity.
+- **Statistics and Gamification**: A points and leaderboard system is planned to encourage engagement and quality contributions.
 
-## Technologies Utilisées
-- **Backend** : Flask (Python) avec SQLAlchemy pour la gestion de la base de données.
-- **Base de données** : PostgreSQL, avec **Flask-Migrate** pour gérer les migrations de schéma.
-- **Authentification** : JWT (JSON Web Tokens) pour gérer l’authentification et la sécurité des utilisateurs.
-- **Frontend** : En préparation, le projet utilisera probablement **React** pour une interface utilisateur dynamique.
+## Technologies Used
+- **Backend**: Flask (Python) with SQLAlchemy for database management.
+- **Database**: PostgreSQL, using **Flask-Migrate** to manage schema migrations.
+- **Authentication**: JWT (JSON Web Tokens) to handle user authentication and security.
+- **Frontend**: In preparation, the project will likely use **React** for a dynamic user interface.
 
-## Installation et Configuration
-Si vous souhaitez contribuer ou tester ce projet en local, voici comment vous pouvez l'installer sur votre machine.
+## Installation and Setup
+If you wish to contribute or test this project locally, here’s how you can set it up on your machine.
 
-### Prérequis
+### Prerequisites
 - **Python 3.8+**
-- **PostgreSQL** (configuré avec une base de données nommée `just_do_it_db`)
-- **Node.js** (si le frontend est en cours de développement)
+- **PostgreSQL** (configured with a database named `just_do_it_db`)
+- **Node.js** (if the frontend is under development)
 
 ### Installation
-1. Clonez le projet :
+1. Clone the project:
    ```sh
-   git clone https://github.com/votre-utilisateur/just-do-it.git
+   git clone https://github.com/your-username/just-do-it.git
    cd just-do-it/backend
    ```
 
-2. Créez un environnement virtuel et activez-le :
+2. Create a virtual environment and activate it:
    ```sh
    python -m venv venv
-   venv\Scripts\activate  # Sur Windows
-   source venv/bin/activate # Sur MacOS/Linux
+   venv\Scripts\activate  # On Windows
+   source venv/bin/activate # On MacOS/Linux
    ```
 
-3. Installez les dépendances :
+3. Install the dependencies:
    ```sh
    pip install -r requirements.txt
    ```
 
-4. Créez un fichier `.env` à la racine du projet backend avec les informations sensibles (par exemple, la chaîne de connexion à la base de données) :
+4. Create a `.env` file at the root of the backend project with the sensitive information (e.g., database connection string):
    ```env
    DATABASE_URL=postgresql://username:password@localhost/just_do_it_db
-   JWT_SECRET_KEY=votre-cle-secrete
+   JWT_SECRET_KEY=your-secret-key
    ```
 
-5. Initialisez la base de données :
+5. Initialize the database:
    ```sh
    flask db init
    flask db migrate -m "Initial migration."
    flask db upgrade
    ```
 
-6. Lancez l’application :
+6. Run the application:
    ```sh
    python app.py
    ```
-   L’application devrait être accessible sur `http://127.0.0.1:5000`.
+   The application should be accessible at `http://127.0.0.1:5000`.
 
 ## Contribution
-Pour l'instant il ne s'agit que d'un projet personnel ayant pour but l'apprentissage et la mise en pratique, cependant si le MVP est deployé et que des users sont intéressés alors les contributions seront les bienvenues ! Voici comment vous pourrez le faire :
+For now, this is a personal project aimed at learning and practice, but if the MVP is deployed and users are interested, contributions will be welcome! Here’s how you can contribute:
 
-- **Signaler des bugs** : Ouvrez une issue sur GitHub.
-- **Proposer de nouvelles fonctionnalités** : Discutez d'une idée ou faites une suggestion en ouvrant une issue.
-- **Envoyer une pull request** : Pour les nouvelles fonctionnalités ou corrections de bugs.
+- **Report Bugs**: Open an issue on GitHub.
+- **Suggest New Features**: Discuss an idea or make a suggestion by opening an issue.
+- **Submit a Pull Request**: For new features or bug fixes.
 
-Merci de lire le fichier `CONTRIBUTING.md` (en construction) avant de soumettre vos contributions.
+Please read the `CONTRIBUTING.md` file (in preparation) before submitting contributions.
 
-## Plan d'Évolution
-Voici certaines des fonctionnalités planifiées pour un développement prochain :
-- **Système de notification** : Pour avertir les utilisateurs des réponses ou des likes.
-- **Gamification complète** : Leaderboard, niveaux, et badges pour gamification du forum.
-- **Front-end dynamique** : Utilisation de **React** (à voir) pour l’interface utilisateur.
+## Future Plans
+Here are some of the features planned for future development:
+- **Notification System**: To notify users of replies or likes.
+- **Full Gamification**: Leaderboard, levels, and badges to enhance the forum experience.
+- **Dynamic Front-End**: Likely using **React** for the user interface.
 
-## Auteur
-Ce projet est développé par @Jyriu (Sami YEZZA). Pour toute question, n'hésitez pas à me contacter sur GitHub.
+## Author
+This project is developed by [your name]. For any questions, feel free to contact me on [your email or GitHub].
 
-## Licence
-Ce projet est sous licence MIT. Consultez le fichier `LICENSE` pour plus d'informations.
+## License
+This project is licensed under the MIT License. See the `LICENSE` file for more information.
 
