@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from flask_migrate import Migrate
 from routes.user_routes import user_bp
 from routes.post_routes import post_bp
+from routes.like_routes import like_bp
 
 # load environment variables
 # load_dotenv()
@@ -29,6 +30,7 @@ migrate = Migrate(app, db)
 # blueprints
 app.register_blueprint(user_bp)
 app.register_blueprint(post_bp)
+app.register_blueprint(like_bp)
 
 if __name__ == '__main__':
     app.run(debug=True)

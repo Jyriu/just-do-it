@@ -3,6 +3,8 @@ from extensions import db, bcrypt
 from models import User, Post, Reply
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
+logging.basicConfig(level=logging.DEBUG)
+
 post_bp = Blueprint('post_bp', __name__)
 
 @post_bp.route('/create_post', methods=['POST'])
@@ -24,22 +26,20 @@ def create_post():
 @post_bp.route('/reply_post', methods=['POST'])
 @jwt_required()
 def reply_post():
+    user_id = get_jwt_identity()
     data = request.get_json()
 
-    if 'post_id' not in data or 'content' not in data:
-        return jsonify({'error': 'Missing post_id or content'}), 400
-    
-    user_id = get_jwt_identity()
-
-    post = Post.query.get(data['post_id'])
+    # check if post exists
+    post = Post.query.get(post_id)
     if not post:
-        return jsonify({'error': 'Post not found'}), 404
+        return jsonify({"message": "Post introuvable"}), 404
     
-    reply = Reply(post_id=data['post_id'], user_id=user_id, content=data['content'])
+    # add reply to db
+    reply = Reply(content=data['content'], user_id=user_id, post_id=post_id)
     db.session.add(reply)
     db.session.commit()
 
-    return jsonify({'message': 'Reply successfully created'}), 201
+    return jsonify({"message": "Réponse créée avec succès."}), 201
 
 @post_bp.route('/reply_reply', methods=['POST'])
 @jwt_required()
