@@ -29,7 +29,7 @@ If you wish to contribute or test this project locally, here’s how you can set
 ### Installation
 1. Clone the project:
    ```sh
-   git clone https://github.com/your-username/just-do-it.git
+   git clone https://github.com/Jyriu/just-do-it.git
    cd just-do-it/backend
    ```
 
