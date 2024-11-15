@@ -80,7 +80,7 @@ Here are some of the features planned for future development:
 - **Dynamic Front-End**: Likely using **React** for the user interface.
 
 ## Author
-This project is developed by [your name]. For any questions, feel free to contact me on [your email or GitHub].
+This project is developed by Sami YEZZA, @Jyriu. For any questions, feel free to contact me on sami.yezza@gmail.com or on Linkedin.
 
 ## License
 This project is licensed under the MIT License. See the `LICENSE` file for more information.
