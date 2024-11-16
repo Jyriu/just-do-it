@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from extensions import db, bcrypt
 from models import User, Post, Reply
+import logging
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
 logging.basicConfig(level=logging.DEBUG)
@@ -23,9 +24,9 @@ def create_post():
 
     return jsonify({'message': 'Post successfully created'}), 201
 
-@post_bp.route('/reply_post', methods=['POST'])
+@post_bp.route('/reply_post/<int:post_id>', methods=['POST'])
 @jwt_required()
-def reply_post():
+def reply_post(post_id):
     user_id = get_jwt_identity()
     data = request.get_json()
 
@@ -41,9 +42,9 @@ def reply_post():
 
     return jsonify({"message": "Réponse créée avec succès."}), 201
 
-@post_bp.route('/reply_reply', methods=['POST'])
+@post_bp.route('/reply_reply/<int:reply_id>', methods=['POST'])
 @jwt_required()
-def reply_to_reply():
+def reply_to_reply(reply_id):
     data = request.get_json()
 
     # check needed data
