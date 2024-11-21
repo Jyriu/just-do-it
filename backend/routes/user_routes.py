@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from extensions import db, bcrypt
 from models import User
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from utils.return_error import error_response
 
 user_bp = Blueprint('user_bp', __name__)
 
@@ -12,9 +13,9 @@ def register():
 
     # check email or username duplicate exists
     if User.query.filter_by(email=data['email']).first():
-        return jsonify({'error': 'Email already exists'}), 400
+        return error_response(400, 'Email already exists')
     if User.query.filter_by(username=data['username']).first():
-        return jsonify({'error': 'Username already exists'}), 400
+        return error_response(400, 'Username already exists')
     
     # hash the password with bcrypt
     hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
@@ -33,9 +34,9 @@ def login():
     # check email then password
     user = User.query.filter_by(username=data['username']).first()
     if not user:
-        return jsonify({'error': 'Invalid email'}), 401
+        return error_response(401, 'Invalid email')
     if not bcrypt.check_password_hash(user.password_hash, data['password']):
-        return jsonify({'error': 'Invalid password'}), 401
+        return error_response(401, 'Invalid password')
     
     # create jwt token
     token = create_access_token(identity=user.id)
@@ -53,6 +54,28 @@ def profile():
     user = User.query.get(user_id)
 
     if not user:
-        return jsonify({'error': 'User not found'}), 404
+        return error_response(404, 'User not found')
     
     return jsonify({'username': user.username, 'email': user.email}), 200
+
+@user_bp.route('/change_password', methods=['POST'])
+@jwt_required()
+def change_password():
+    data = request.get_json()
+    user_id = get_jwt_identity()
+
+    # get user from db
+    user = User.query.get(user_id)
+
+    # check old password
+    if not bcrypt.check_password_hash(user.password_hash, data['old_password']):
+        return error_response(401, 'Invalid old password')
+    
+    # hash the new password
+    hashed_password = bcrypt.generate_password_hash(data['new_password']).decode('utf-8')
+
+    # update user password
+    user.password_hash = hashed_password
+    db.session.commit()
+
+    return jsonify({'message': 'Password successfully updated'}), 200
