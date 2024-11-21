@@ -1,3 +1,5 @@
+from extensions import db
+
 class Topic(db.Model):
     # id, title, description and a relation with posts
     id = db.Column(db.Integer, primary_key=True)

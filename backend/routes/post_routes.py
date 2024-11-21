@@ -8,6 +8,7 @@ from utils.return_error import error_response
 logging.basicConfig(level=logging.DEBUG)
 
 post_bp = Blueprint('post_bp', __name__)
+topic_bp = Blueprint('topic_bp', __name__)
 
 @post_bp.route('/create_post', methods=['POST'])
 @jwt_required()

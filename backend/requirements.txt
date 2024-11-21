@@ -4,3 +4,11 @@ Flask-Migrate
 psycopg2
 Flask-JWT-Extended
 flask
+pytest
+iniconfig
+pluggy
+python-dotenv
+Flask-Bcrypt
+pytest-flask
+pytest-cov
+psycopg2-binary
