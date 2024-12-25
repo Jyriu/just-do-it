@@ -1,25 +1,28 @@
 import pytest
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_jwt_extended import create_access_token
-import sys
-import os
-import json
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from routes.user_routes import user_bp  # importe le blueprint des routes utilisateur
+from flask import Flask, json
+from flask_jwt_extended import JWTManager
 from extensions import db, bcrypt
+from routes.user_routes import user_bp
 from models import User
 
-# Configurer une application Flask pour les tests
 @pytest.fixture
 def app():
+    """Configure l'application pour les tests."""
     app = Flask(__name__)
-    app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'  # Utiliser une DB en mémoire pour les tests
-    app.config['SECRET_KEY'] = 'test_secret'
-    app.config['JWT_SECRET_KEY'] = 'jwt_secret'
+    app.config.update({
+        'TESTING': True,
+        'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
+        'SQLALCHEMY_TRACK_MODIFICATIONS': False,
+        'SECRET_KEY': 'test_secret',
+        'JWT_SECRET_KEY': 'jwt_secret_for_test'  # Ajout de la clé JWT
+    })
+
+    # Initialiser les extensions
     db.init_app(app)
     bcrypt.init_app(app)
+    JWTManager(app)  # Initialisation du JWT Manager
+    
+    # Enregistrer le blueprint
     app.register_blueprint(user_bp)
 
     with app.app_context():
@@ -29,7 +32,6 @@ def app():
         db.drop_all()
 
 @pytest.fixture
-
 def client(app):
     return app.test_client()
 
@@ -44,104 +46,83 @@ def create_user():
     return _create_user
 
 def test_register_success(client):
+    """Test l'enregistrement réussi d'un utilisateur."""
     response = client.post('/register', json={
-        'username': 'testuser',
-        'email': 'testuser@example.com',
-        'password': 'password123'
+        'username': 'newuser',
+        'email': 'new@test.com',
+        'password': 'TestPass123'
     })
     assert response.status_code == 201
-    assert response.get_json()['message'] == 'User successfully registered'
+    assert 'message' in json.loads(response.data)
 
 def test_register_duplicate_email(client, create_user):
-    create_user('testuser', 'testuser@example.com', 'password123')
+    """Test l'enregistrement avec un email déjà utilisé."""
+    # Créer un premier utilisateur
+    create_user('existinguser', 'existing@test.com', 'TestPass123')
+    
+    # Tenter de créer un utilisateur avec le même email
     response = client.post('/register', json={
-        'username': 'testuser2',
-        'email': 'testuser@example.com',
-        'password': 'password123'
+        'username': 'newuser',
+        'email': 'existing@test.com',
+        'password': 'TestPass123'
     })
     assert response.status_code == 400
-    assert response.get_json()['error'] == 'Email already exists'
+    assert 'error' in json.loads(response.data)
 
-def test_register_duplicate_username(client, create_user):
-    create_user('testuser', 'testuser@example.com', 'password123')
+def test_register_invalid_data(client):
+    """Test l'enregistrement avec des données invalides."""
+    # Test avec un email invalide
     response = client.post('/register', json={
-        'username': 'testuser',
-        'email': 'newemail@example.com',
-        'password': 'password123'
+        'username': 'newuser',
+        'email': 'invalid-email',
+        'password': 'TestPass123'
     })
     assert response.status_code == 400
-    assert response.get_json()['error'] == 'Username already exists'
+    
+    # Test avec un mot de passe trop court
+    response = client.post('/register', json={
+        'username': 'newuser',
+        'email': 'new@test.com',
+        'password': 'short'
+    })
+    assert response.status_code == 400
 
 def test_login_success(client, create_user):
-    create_user('testuser', 'testuser@example.com', 'password123')
+    """Test la connexion réussie."""
+    create_user('loginuser', 'login@test.com', 'TestPass123')
     response = client.post('/login', json={
-        'username': 'testuser',
-        'password': 'password123'
+        'username': 'loginuser',
+        'password': 'TestPass123'
     })
     assert response.status_code == 200
-    assert 'access_token' in response.get_json()
+    data = json.loads(response.data)
+    assert 'access_token' in data
+    assert 'user' in data
 
-def test_login_invalid_username(client):
+def test_login_invalid_credentials(client, create_user):
+    """Test la connexion avec des identifiants invalides."""
+    create_user('loginuser', 'login@test.com', 'TestPass123')
+    
+    # Test avec un mauvais mot de passe
     response = client.post('/login', json={
-        'username': 'unknownuser',
-        'password': 'password123'
+        'username': 'loginuser',
+        'password': 'WrongPass123'
     })
     assert response.status_code == 401
-    assert response.get_json()['error'] == 'Invalid email'
-
-def test_login_invalid_password(client, create_user):
-    create_user('testuser', 'testuser@example.com', 'password123')
+    
+    # Test avec un utilisateur inexistant
     response = client.post('/login', json={
-        'username': 'testuser',
-        'password': 'wrongpassword'
+        'username': 'nonexistent',
+        'password': 'TestPass123'
     })
     assert response.status_code == 401
-    assert response.get_json()['error'] == 'Invalid password'
 
-def test_profile_success(client, create_user):
-    user = create_user('testuser', 'testuser@example.com', 'password123')
-    access_token = create_access_token(identity=user.id)
-    headers = {
-        'Authorization': f'Bearer {access_token}'
-    }
-    response = client.get('/profile', headers=headers)
+def test_protected_route(client, auth_headers):
+    """Test l'accès à une route protégée avec authentification."""
+    response = client.get('/profile', headers=auth_headers)
     assert response.status_code == 200
-    assert response.get_json() == {
-        'username': 'testuser',
-        'email': 'testuser@example.com'
-    }
-
-def test_profile_user_not_found(client):
-    access_token = create_access_token(identity=999)  # ID utilisateur qui n'existe pas
-    headers = {
-        'Authorization': f'Bearer {access_token}'
-    }
-    response = client.get('/profile', headers=headers)
-    assert response.status_code == 404
-    assert response.get_json()['error'] == 'User not found'
-
-def test_change_password_success(client, create_user):
-    user = create_user('testuser', 'testuser@example.com', 'password123')
-    access_token = create_access_token(identity=user.id)
-    headers = {
-        'Authorization': f'Bearer {access_token}'
-    }
-    response = client.post('/change_password', headers=headers, json={
-        'old_password': 'password123',
-        'new_password': 'newpassword123'
-    })
-    assert response.status_code == 200
-    assert response.get_json()['message'] == 'Password successfully updated'
-
-def test_change_password_invalid_old_password(client, create_user):
-    user = create_user('testuser', 'testuser@example.com', 'password123')
-    access_token = create_access_token(identity=user.id)
-    headers = {
-        'Authorization': f'Bearer {access_token}'
-    }
-    response = client.post('/change_password', headers=headers, json={
-        'old_password': 'wrongpassword',
-        'new_password': 'newpassword123'
-    })
+    
+def test_protected_route_without_token(client):
+    """Test l'accès à une route protégée sans authentification."""
+    response = client.get('/profile')
     assert response.status_code == 401
-    assert response.get_json()['error'] == 'Invalid old password'

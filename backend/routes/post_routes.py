@@ -19,7 +19,7 @@ def create_post():
     if 'topic_id' not in data:
         return error_response('Topic ID is required', 400)
 
-    topic = Topic.query.get(data['topic_id'])
+    topic = db.session.get(Topic, data['topic_id'])
     if not topic:
         return error_response('Invalid topic ID', 404)
 
@@ -30,7 +30,16 @@ def create_post():
     db.session.add(post)
     db.session.commit()
 
-    return jsonify({'message': 'Post successfully created'}), 201
+    # Retourner l'ID du post créé
+    return jsonify({
+        'message': 'Post successfully created',
+        'id': post.id,
+        'title': post.title,
+        'content': post.content,
+        'topic_id': post.topic_id,
+        'user_id': post.user_id,
+        'created_at': post.created_at.isoformat() if post.created_at else None
+    }), 201
 
 
 @post_bp.route('/reply_post/<int:post_id>', methods=['POST'])
@@ -40,7 +49,7 @@ def reply_post(post_id):
     data = request.get_json()
 
     # check if post exists
-    post = Post.query.get(post_id)
+    post = db.session.get(Post, post_id)
     if not post:
         return error_response('Post not found', 404)
     
@@ -62,7 +71,7 @@ def reply_to_reply(reply_id):
     
     user_id = get_jwt_identity()
 
-    parent_reply = Reply.query.get(data['parent_reply_id'])
+    parent_reply = db.session.get(Reply, data['parent_reply_id'])
     if not parent_reply:
         return error_response('Parent reply not found', 404)
     
@@ -97,30 +106,39 @@ def get_posts():
 @jwt_required()
 def update_post(post_id):
     user_id = get_jwt_identity()
-    post = Post.query.get(post_id)
-
+    # Convertir user_id en entier car get_jwt_identity() retourne une chaîne
+    user_id = int(user_id)
+    
+    post = db.session.get(Post, post_id)
     if not post:
         return error_response('Post not found', 404)
+    
+    # Log pour le débogage
+    logging.debug(f"User ID from token: {user_id} (type: {type(user_id)})")
+    logging.debug(f"Post user_id: {post.user_id} (type: {type(post.user_id)})")
     
     if post.user_id != user_id:
         return error_response('Unauthorized', 401)
     
     data = request.get_json()
-
     if 'title' not in data or 'content' not in data:
         return error_response('Title and content are required', 400)
     
     post.title = data['title']
     post.content = data['content']
     db.session.commit()
-
-    return jsonify({'message': 'Post updated successfully'}), 200
+    
+    # Retourner le post mis à jour
+    return jsonify({
+        'message': 'Post updated successfully',
+        'post': post.to_dict()
+    }), 200
 
 @post_bp.route('/update_reply/<int:reply_id>', methods=['PUT'])
 @jwt_required()
 def update_reply(reply_id):
     user_id = get_jwt_identity()
-    reply = Reply.query.get(reply_id)
+    reply = db.session.get(Reply, reply_id)
 
     if not reply:
         return error_response('Reply not found', 404)
@@ -148,7 +166,7 @@ def get_topics():
 @jwt_required()
 def create_topic():
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if not user.is_admin:
         return error_response('Unauthorized', 401)

@@ -1,81 +1,71 @@
 from flask import Blueprint, request, jsonify
+from models import User
 from extensions import db, bcrypt
-from models.user import User
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token
 from utils.return_error import error_response
+from models.schemas import UserSchema, LoginSchema
+from marshmallow import ValidationError
 
 user_bp = Blueprint('user_bp', __name__)
 
+user_schema = UserSchema()
+login_schema = LoginSchema()
+
 @user_bp.route('/register', methods=['POST'])
 def register():
-    # get data send by user
-    data = request.get_json()
+    try:
+        # Récupérer les données brutes avant validation
+        data = request.get_json()
+        
+        # Vérifier d'abord si l'email existe
+        if User.query.filter_by(email=data['email']).first():
+            return error_response('Email already exists', 400)
+            
+        # Vérifier si le nom d'utilisateur existe
+        if User.query.filter_by(username=data['username']).first():
+            return error_response('Username already exists', 400)
+            
+        # Ensuite seulement, valider les données avec Marshmallow
+        validated_data = user_schema.load(data)
+        
+        # Créer un nouvel utilisateur
+        user = User(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password_hash=bcrypt.generate_password_hash(validated_data['password']).decode('utf-8')
+        )
+        
+        db.session.add(user)
+        db.session.commit()
 
-    # check email or username duplicate exists
-    if User.query.filter_by(email=data['email']).first():
-        return error_response(400, 'Email already exists')
-    if User.query.filter_by(username=data['username']).first():
-        return error_response(400, 'Username already exists')
-    
-    # hash the password with bcrypt
-    hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
+        return jsonify({
+            'message': 'User successfully registered',
+            'user': user_schema.dump(user)
+        }), 201
 
-    # add user to db
-    user = User(username=data['username'], email=data['email'], password_hash=hashed_password)
-    db.session.add(user)
-    db.session.commit()
-
-    return jsonify({'message': 'User successfully registered'}), 201
+    except ValidationError as err:
+        return error_response(err.messages, 400)
+    except Exception as e:
+        db.session.rollback()
+        return error_response(str(e), 400)
 
 @user_bp.route('/login', methods=['POST'])
 def login():
-    data = request.get_json()
+    try:
+        data = request.get_json()
+        user = User.query.filter_by(username=data['username']).first()
 
-    # check email then password
-    user = User.query.filter_by(username=data['username']).first()
-    if not user:
-        return error_response(401, 'Invalid email')
-    if not bcrypt.check_password_hash(user.password_hash, data['password']):
-        return error_response(401, 'Invalid password')
-    
-    # create jwt token
-    token = create_access_token(identity=user.id)
+        if not user:
+            return error_response('Invalid username or password', 401)
 
-    return jsonify({'access_token': token}), 200
+        if not bcrypt.check_password_hash(user.password_hash, data['password']):
+            return error_response('Invalid username or password', 401)
 
-@user_bp.route('/profile', methods=['GET'])
-@jwt_required()
-def profile():
+        access_token = create_access_token(identity=str(user.id))
+        return jsonify({
+            'message': 'Login successful',
+            'access_token': access_token
+        }), 200
 
-    # get user from token
-    user_id = get_jwt_identity()
-    
-    # get user from db
-    user = User.query.get(user_id)
-
-    if not user:
-        return error_response(404, 'User not found')
-    
-    return jsonify({'username': user.username, 'email': user.email}), 200
-
-@user_bp.route('/change_password', methods=['POST'])
-@jwt_required()
-def change_password():
-    data = request.get_json()
-    user_id = get_jwt_identity()
-
-    # get user from db
-    user = User.query.get(user_id)
-
-    # check old password
-    if not bcrypt.check_password_hash(user.password_hash, data['old_password']):
-        return error_response(401, 'Invalid old password')
-    
-    # hash the new password
-    hashed_password = bcrypt.generate_password_hash(data['new_password']).decode('utf-8')
-
-    # update user password
-    user.password_hash = hashed_password
-    db.session.commit()
-
-    return jsonify({'message': 'Password successfully updated'}), 200
+    except Exception as e:
+        return error_response(str(e), 401)
