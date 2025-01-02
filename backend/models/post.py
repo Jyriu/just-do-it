@@ -8,13 +8,19 @@ class Post(db.Model):
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 
-    replies = db.relationship('Reply', backref='post', lazy=True)
-    likes = db.relationship('Like', backref='post', lazy=True, 
-                          primaryjoin="and_(Post.id==Like.post_id, Like.reply_id==None)")
+    replies = db.relationship('Reply', backref='post', lazy=True, 
+                            cascade='all, delete-orphan')
+    likes = db.relationship('Like', backref='post', lazy=True,
+                          primaryjoin="and_(Post.id==Like.post_id, Like.reply_id==None)",
+                          cascade='all, delete-orphan')
 
     @property
     def likes_count(self):
         return len(self.likes)
+
+    @property
+    def replies_count(self):
+        return len(self.replies)
 
     def to_dict(self, include_replies=False):
         post_data = {
@@ -24,7 +30,8 @@ class Post(db.Model):
             'title': self.title,
             'content': self.content,
             'created_at': self.created_at.isoformat(),
-            'likes_count': self.likes_count
+            'likes_count': self.likes_count,
+            'replies_count': self.replies_count
         }
 
         if include_replies:

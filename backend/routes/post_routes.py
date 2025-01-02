@@ -159,7 +159,7 @@ def update_reply(reply_id):
 @post_bp.route('/topics', methods=['GET'])
 def get_topics():
     topics = Topic.query.all()
-    return jsonify([{'id': topic.id, 'name': topic.name, 'description': topic.description} for topic in topics])
+    return jsonify([{'id': topic.id, 'title': topic.title, 'description': topic.description} for topic in topics])
 
 # create a topic (only for admin)
 @post_bp.route('/create_topic', methods=['POST'])
@@ -181,3 +181,70 @@ def create_topic():
     db.session.commit()
 
     return jsonify({'message': 'Topic created successfully'}), 201
+
+@post_bp.route('/posts/<int:post_id>', methods=['DELETE'])
+@jwt_required()
+def delete_post(post_id):
+    """Supprime un post et toutes ses réponses associées."""
+    user_id = get_jwt_identity()
+    
+    # Vérifier si le post existe
+    post = db.session.get(Post, post_id)
+    if not post:
+        return error_response('Post not found', 404)
+    
+    # Vérifier si l'utilisateur est l'auteur du post
+    if post.user_id != int(user_id):
+        return error_response('Unauthorized', 401)
+    
+    try:
+        # Les réponses seront supprimées automatiquement grâce à la cascade
+        db.session.delete(post)
+        db.session.commit()
+        return jsonify({'message': 'Post and associated replies deleted successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting post: {str(e)}")
+        return error_response('Error deleting post', 500)
+
+@post_bp.route('/replies/<int:reply_id>', methods=['DELETE'])
+@jwt_required()
+def delete_reply(reply_id):
+    """Supprime une réponse spécifique."""
+    user_id = get_jwt_identity()
+    
+    # Vérifier si la réponse existe
+    reply = db.session.get(Reply, reply_id)
+    if not reply:
+        return error_response('Reply not found', 404)
+    
+    # Vérifier si l'utilisateur est l'auteur de la réponse
+    if reply.user_id != int(user_id):
+        return error_response('Unauthorized', 401)
+    
+    try:
+        db.session.delete(reply)
+        db.session.commit()
+        return jsonify({'message': 'Reply deleted successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting reply: {str(e)}")
+        return error_response('Error deleting reply', 500)
+
+@post_bp.route('/posts/<int:post_id>', methods=['GET'])
+def get_post(post_id):
+    """Récupère un post spécifique avec ses réponses."""
+    post = db.session.get(Post, post_id)
+    if not post:
+        return error_response('Post not found', 404)
+    
+    return jsonify(post.to_dict(include_replies=True)), 200
+
+@post_bp.route('/replies/<int:reply_id>', methods=['GET'])
+def get_reply(reply_id):
+    """Récupère une réponse spécifique."""
+    reply = db.session.get(Reply, reply_id)
+    if not reply:
+        return error_response('Reply not found', 404)
+    
+    return jsonify(reply.to_dict()), 200

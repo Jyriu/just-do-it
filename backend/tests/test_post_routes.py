@@ -146,3 +146,119 @@ def test_get_topics(client, create_topic):
     assert len(data) == 2
     assert data[0]['title'] == "Topic 1"
     assert data[1]['title'] == "Topic 2"
+
+def test_delete_post_success(client, auth_headers, create_topic, create_post):
+    """Test la suppression réussie d'un post par son auteur."""
+    topic = create_topic("Test Topic")
+    post = create_post(
+        title="Post to delete",
+        content="Content to delete",
+        user_id=auth_headers['user_id'],
+        topic_id=topic.id
+    )
+    
+    response = client.delete(f'/posts/{post.id}',
+        headers=auth_headers
+    )
+    assert response.status_code == 200
+    assert 'message' in json.loads(response.data)
+    
+    # Vérifier que le post n'existe plus
+    get_response = client.get(f'/posts/{post.id}')
+    assert get_response.status_code == 404
+
+def test_delete_others_post(client, auth_headers, create_user, create_topic, create_post):
+    """Test la tentative de suppression du post d'un autre utilisateur."""
+    other_user = create_user("otheruser", "other@test.com", "TestPass123")
+    topic = create_topic("Test Topic")
+    post = create_post(
+        title="Other's Post",
+        content="Other's Content",
+        user_id=other_user.id,
+        topic_id=topic.id
+    )
+    
+    response = client.delete(f'/posts/{post.id}',
+        headers=auth_headers
+    )
+    assert response.status_code == 401
+
+def test_delete_post_with_replies(client, auth_headers, create_topic, create_post, create_reply):
+    """Test la suppression d'un post avec des réponses."""
+    topic = create_topic("Test Topic")
+    post = create_post(
+        title="Post with replies",
+        content="Main content",
+        user_id=auth_headers['user_id'],
+        topic_id=topic.id
+    )
+    
+    # Ajouter quelques réponses
+    reply1 = create_reply(
+        content="First reply",
+        post_id=post.id,
+        user_id=auth_headers['user_id']
+    )
+    reply2 = create_reply(
+        content="Second reply",
+        post_id=post.id,
+        user_id=auth_headers['user_id']
+    )
+    
+    response = client.delete(f'/posts/{post.id}',
+        headers=auth_headers
+    )
+    assert response.status_code == 200
+    
+    # Vérifier que les réponses sont également supprimées
+    get_reply1 = client.get(f'/replies/{reply1.id}')
+    get_reply2 = client.get(f'/replies/{reply2.id}')
+    assert get_reply1.status_code == 404
+    assert get_reply2.status_code == 404
+
+def test_delete_reply_success(client, auth_headers, create_topic, create_post, create_reply):
+    """Test la suppression réussie d'une réponse par son auteur."""
+    topic = create_topic("Test Topic")
+    post = create_post(
+        title="Post with reply",
+        content="Main content",
+        user_id=auth_headers['user_id'],
+        topic_id=topic.id
+    )
+    
+    reply = create_reply(
+        content="Reply to delete",
+        post_id=post.id,
+        user_id=auth_headers['user_id']
+    )
+    
+    response = client.delete(f'/replies/{reply.id}',
+        headers=auth_headers
+    )
+    assert response.status_code == 200
+    
+    # Vérifier que la réponse n'existe plus
+    get_response = client.get(f'/replies/{reply.id}')
+    assert get_response.status_code == 404
+
+def test_delete_others_reply(client, auth_headers, create_user, create_topic, create_post, create_reply):
+    """Test la tentative de suppression de la réponse d'un autre utilisateur."""
+    other_user = create_user("otheruser", "other@test.com", "TestPass123")
+    topic = create_topic("Test Topic")
+    post = create_post(
+        title="Post",
+        content="Content",
+        user_id=other_user.id,
+        topic_id=topic.id
+    )
+    
+    reply = create_reply(
+        content="Other's reply",
+        post_id=post.id,
+        user_id=other_user.id
+    )
+    
+    response = client.delete(f'/replies/{reply.id}',
+        headers=auth_headers
+    )
+    assert response.status_code == 401
