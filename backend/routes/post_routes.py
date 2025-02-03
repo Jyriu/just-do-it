@@ -4,14 +4,19 @@ from models import User, Post, Reply, Topic
 import logging
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from utils.return_error import error_response
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 logging.basicConfig(level=logging.DEBUG)
 
 post_bp = Blueprint('post_bp', __name__)
 topic_bp = Blueprint('topic_bp', __name__)
 
+limiter = Limiter(key_func=get_remote_address)
+
 @post_bp.route('/create_post', methods=['POST'])
 @jwt_required()
+@limiter.limit("3/minute")
 def create_post():
     data = request.get_json()
 
@@ -102,18 +107,47 @@ def get_posts():
         'has_prev': posts.has_prev
     })
 
+@post_bp.route('/posts/<int:post_id>', methods=['GET'])
+def get_detailed_post(post_id):
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    
+    post = db.session.get(Post, post_id)
+    if not post:
+        return error_response('Post not found', 404)
+    
+    post.views_count += 1
+    
+    paginated_replies = Reply.query.filter_by(post_id=post_id)\
+        .order_by(Reply.created_at.desc())\
+        .paginate(page=page, per_page=per_page)
+    
+    post_data = post.to_dict(include_replies=False)
+    
+    post_data['replies'] = {
+        'items': [reply.to_dict() for reply in paginated_replies.items],
+        'total': paginated_replies.total,
+        'pages': paginated_replies.pages,
+        'current_page': page,
+        'per_page': per_page,
+        'has_next': paginated_replies.has_next,
+        'has_prev': paginated_replies.has_prev
+    }
+    
+    db.session.commit()
+    
+    return jsonify(post_data), 200
+
 @post_bp.route('/update_post/<int:post_id>', methods=['PUT'])
 @jwt_required()
 def update_post(post_id):
     user_id = get_jwt_identity()
-    # Convertir user_id en entier car get_jwt_identity() retourne une chaîne
     user_id = int(user_id)
     
     post = db.session.get(Post, post_id)
     if not post:
         return error_response('Post not found', 404)
     
-    # Log pour le débogage
     logging.debug(f"User ID from token: {user_id} (type: {type(user_id)})")
     logging.debug(f"Post user_id: {post.user_id} (type: {type(post.user_id)})")
     
@@ -128,7 +162,6 @@ def update_post(post_id):
     post.content = data['content']
     db.session.commit()
     
-    # Retourner le post mis à jour
     return jsonify({
         'message': 'Post updated successfully',
         'post': post.to_dict()
@@ -161,7 +194,6 @@ def get_topics():
     topics = Topic.query.all()
     return jsonify([{'id': topic.id, 'title': topic.title, 'description': topic.description} for topic in topics])
 
-# create a topic (only for admin)
 @post_bp.route('/create_topic', methods=['POST'])
 @jwt_required()
 def create_topic():
@@ -188,17 +220,14 @@ def delete_post(post_id):
     """Supprime un post et toutes ses réponses associées."""
     user_id = get_jwt_identity()
     
-    # Vérifier si le post existe
     post = db.session.get(Post, post_id)
     if not post:
         return error_response('Post not found', 404)
     
-    # Vérifier si l'utilisateur est l'auteur du post
     if post.user_id != int(user_id):
         return error_response('Unauthorized', 401)
     
     try:
-        # Les réponses seront supprimées automatiquement grâce à la cascade
         db.session.delete(post)
         db.session.commit()
         return jsonify({'message': 'Post and associated replies deleted successfully'}), 200
@@ -213,12 +242,10 @@ def delete_reply(reply_id):
     """Supprime une réponse spécifique."""
     user_id = get_jwt_identity()
     
-    # Vérifier si la réponse existe
     reply = db.session.get(Reply, reply_id)
     if not reply:
         return error_response('Reply not found', 404)
     
-    # Vérifier si l'utilisateur est l'auteur de la réponse
     if reply.user_id != int(user_id):
         return error_response('Unauthorized', 401)
     

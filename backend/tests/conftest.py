@@ -3,7 +3,7 @@ import sys
 import pytest
 from datetime import datetime, UTC
 
-# Ajouter le répertoire 'backend' au path Python
+# Add 'backend' directory to Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app
@@ -16,10 +16,10 @@ from models.like import Like
 
 @pytest.fixture
 def app():
-    """Configure l'application pour les tests."""
+    """Configure the application for testing."""
     app = create_app()
     
-    # Configuration spécifique pour les tests
+    # Test-specific configuration
     app.config.update({
         "TESTING": True,
         "SQLALCHEMY_DATABASE_URI": "postgresql://postgres:password@localhost/test_db",
@@ -27,32 +27,32 @@ def app():
         "JWT_SECRET_KEY": "test_secret_key"
     })
 
-    # Créer le contexte d'application
+    # Create application context
     ctx = app.app_context()
     ctx.push()
 
-    db.create_all()  # Créer toutes les tables pour les tests
+    db.create_all()  # Create all tables for testing
     
     yield app
     
     db.session.remove()
-    db.drop_all()  # Nettoyer après les tests
-    ctx.pop()  # Retirer le contexte d'application
+    db.drop_all()  # Clean up after tests
+    ctx.pop()  # Remove application context
 
 @pytest.fixture
 def client(app):
-    """Fournit un client HTTP de test."""
+    """Provide a test HTTP client."""
     return app.test_client()
 
 @pytest.fixture
 def app_context(app):
-    """Fournit un contexte d'application."""
+    """Provide an application context."""
     with app.app_context():
         yield
 
 @pytest.fixture
 def create_user(app):
-    """Fixture pour créer un utilisateur de test."""
+    """Fixture to create a test user."""
     def _create_user(username, email, password):
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         user = User(username=username, email=email, password_hash=hashed_password)
@@ -63,7 +63,7 @@ def create_user(app):
 
 @pytest.fixture
 def auth_headers(client, create_user):
-    """Fournit les headers d'authentification avec un token JWT."""
+    """Provide authentication headers with JWT token."""
     user = create_user("testuser", "test@test.com", "TestPass123")
     response = client.post('/login', json={
         'username': 'testuser',
@@ -74,8 +74,8 @@ def auth_headers(client, create_user):
 
 @pytest.fixture
 def create_topic(app):
-    """Fixture pour créer un topic de test."""
-    def _create_topic(title, description="Description de test"):
+    """Fixture to create a test topic."""
+    def _create_topic(title, description="Test description"):
         topic = Topic(title=title, description=description)
         db.session.add(topic)
         db.session.commit()
@@ -84,7 +84,7 @@ def create_topic(app):
 
 @pytest.fixture
 def create_post(app):
-    """Fixture pour créer un post de test."""
+    """Fixture to create a test post."""
     def _create_post(title, content, user_id, topic_id):
         post = Post(
             title=title,
@@ -100,7 +100,7 @@ def create_post(app):
 
 @pytest.fixture
 def create_reply(app):
-    """Fixture pour créer une réponse de test."""
+    """Fixture to create a test reply."""
     def _create_reply(content, post_id, user_id):
         reply = Reply(
             content=content,
@@ -115,7 +115,7 @@ def create_reply(app):
 
 @pytest.fixture
 def create_like(app):
-    """Fixture pour créer un like de test."""
+    """Fixture to create a test like."""
     def _create_like(user_id, post_id=None, reply_id=None):
         like = Like(
             user_id=user_id,
@@ -129,7 +129,7 @@ def create_like(app):
 
 @pytest.fixture
 def sample_data(app, create_user, create_topic, create_post, create_reply):
-    """Fixture qui crée un ensemble complet de données de test."""
+    """Fixture that creates a complete set of test data."""
     user = create_user("testuser", "test@test.com", "TestPass123")
     topic = create_topic("Test Topic")
     post = create_post(

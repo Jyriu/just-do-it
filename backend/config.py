@@ -1,19 +1,40 @@
 #   store configuration variables like databse connection details and secret keys here
 
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
+from datetime import timedelta
 
 class Config:
-    # Charger la clé secrète depuis l'environnement, sinon utiliser une valeur par défaut
-    SECRET_KEY = os.getenv('SECRET_KEY', 'default_secret_key')
-    # Définir `SQLALCHEMY_DATABASE_URI` pour que SQLAlchemy puisse s'y connecter
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
+    # Database
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'postgresql://postgres:password@localhost/forum_db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    # Clé JWT pour l'authentification
-    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'default_jwt_secret_key')
+    
+    # JWT
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', os.urandom(24).hex())
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+    
+    # CSRF
+    SECRET_KEY = os.getenv('SECRET_KEY', os.urandom(24).hex())
+    WTF_CSRF_ENABLED = True
+    WTF_CSRF_TIME_LIMIT = 3600
+    
+    # Rate Limiting
+    RATELIMIT_DEFAULT = "200 per day;50 per hour"
+    RATELIMIT_STORAGE_URL = "memory://"
+    RATELIMIT_STRATEGY = "fixed-window"
+    
+    # CORS
+    CORS_ORIGINS = ['http://localhost:5173']
 
-    # Imprimer la valeur pour vérifier
-    # print("Config - SQLALCHEMY_DATABASE_URI:", SQLALCHEMY_DATABASE_URI)
+class DevelopmentConfig(Config):
+    DEBUG = True
+    
+class ProductionConfig(Config):
+    DEBUG = False
+    WTF_CSRF_ENABLED = True
+    CORS_ORIGINS = [os.getenv('FRONTEND_URL', 'https://your-domain.com')]
+    
+class TestingConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:password@localhost/test_db'
+    WTF_CSRF_ENABLED = True  # Enable CSRF for security testing
 

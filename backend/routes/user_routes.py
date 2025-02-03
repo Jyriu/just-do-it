@@ -5,13 +5,18 @@ from flask_jwt_extended import create_access_token
 from utils.return_error import error_response
 from models.schemas import UserSchema, LoginSchema
 from marshmallow import ValidationError
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 user_bp = Blueprint('user_bp', __name__)
 
 user_schema = UserSchema()
 login_schema = LoginSchema()
 
+limiter = Limiter(key_func=get_remote_address)
+
 @user_bp.route('/register', methods=['POST'])
+@limiter.limit("5/minute")
 def register():
     try:
         # Récupérer les données brutes avant validation
@@ -50,6 +55,7 @@ def register():
         return error_response(str(e), 400)
 
 @user_bp.route('/login', methods=['POST'])
+@limiter.limit("5/minute")
 def login():
     try:
         data = request.get_json()
