@@ -43,9 +43,12 @@ def register():
         db.session.add(user)
         db.session.commit()
 
+        access_token = create_access_token(identity=str(user.id))
+
         return jsonify({
             'message': 'User successfully registered',
-            'user': user_schema.dump(user)
+            'user': user_schema.dump(user),
+            'access_token': access_token
         }), 201
 
     except ValidationError as err:

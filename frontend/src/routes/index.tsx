@@ -5,6 +5,8 @@ import Login from '../pages/Login';
 import Register from '../pages/Register';
 import Posts from '../pages/Posts';
 import CreatePost from '../pages/CreatePost';
+import PostDetail from '../pages/PostDetail';
+
 
 const routes: RouteObject[] = [
   {
@@ -28,9 +30,14 @@ const routes: RouteObject[] = [
         element: <Posts />,
       },
       {
+        path: 'posts/:id',
+        element: <PostDetail />,
+      },
+      {
         path: 'create-post',
         element: <CreatePost />,
       },
+
     ],
   },
 ];

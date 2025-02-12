@@ -1,18 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
-
-interface Post {
-  id: number;
-  title: string;
-  content: string;
-  author: {
-    username: string;
-  };
-  created_at: string;
-  likes_count: number;
-  replies_count: number;
-}
+import { Post } from '../types';
 
 const Posts = () => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -23,7 +12,7 @@ const Posts = () => {
     const fetchPosts = async () => {
       try {
         const response = await api.get('/posts');
-        setPosts(response.data);
+        setPosts(response.data.posts);
       } catch (err: any) {
         setError(err.response?.data?.message || 'Une erreur est survenue');
       } finally {
@@ -64,18 +53,25 @@ const Posts = () => {
 
       <div className="space-y-6">
         {posts.map((post) => (
-          <div key={post.id} className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-xl font-semibold mb-2">{post.title}</h3>
-            <p className="text-gray-600 mb-4">{post.content}</p>
-            <div className="flex justify-between items-center text-sm text-gray-500">
-              <div>
-                Par {post.author.username} • {new Date(post.created_at).toLocaleDateString()}
+          <div key={post.id} className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow">
+            <Link to={`/posts/${post.id}`} className="block">
+              <h3 className="text-xl font-semibold mb-2 text-gray-900 hover:text-blue-600 transition-colors">
+                {post.title}
+              </h3>
+              <p className="text-gray-600 mb-4 line-clamp-2">{post.content}</p>
+              <div className="flex justify-between items-center text-sm text-gray-500">
+                <div className="flex items-center space-x-4">
+                  <span>Par {post.author.username}</span>
+                  <span>•</span>
+                  <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <span>{post.views_count} vues</span>
+                  <span>{post.likes_count} likes</span>
+                  <span>{post.replies.total} réponses</span>
+                </div>
               </div>
-              <div className="flex space-x-4">
-                <span>{post.likes_count} likes</span>
-                <span>{post.replies_count} réponses</span>
-              </div>
-            </div>
+            </Link>
           </div>
         ))}
       </div>
@@ -83,4 +79,4 @@ const Posts = () => {
   );
 };
 
-export default Posts; 
+export default Posts;

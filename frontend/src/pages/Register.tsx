@@ -27,13 +27,21 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const response = await api.post('/auth/register', {
+      const response = await api.post('/register', {
         username,
         email,
         password,
       });
-      dispatch(setCredentials(response.data));
-      navigate('/posts');
+
+      if (response.data.access_token) {
+        dispatch(setCredentials({
+          user: response.data.user,
+          token: response.data.access_token,
+        }));
+        navigate('/posts');
+      } else {
+        setError(response.data.message || 'Une erreur est survenue');
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Une erreur est survenue');
     } finally {

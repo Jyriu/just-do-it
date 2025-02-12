@@ -14,6 +14,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
 from datetime import timedelta
+from commands import make_admin
 
 def create_app(config_class=DevelopmentConfig):
     # load environment variables
@@ -27,7 +28,11 @@ def create_app(config_class=DevelopmentConfig):
     
     # Initialisation des extensions
     CORS(app, resources={
-        r"/*": {"origins": app.config['CORS_ORIGINS']}
+        r"/*": {
+            "origins": ["http://localhost:5173"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"]
+        }
     })
     JWTManager(app)
     db.init_app(app)
@@ -53,6 +58,9 @@ def create_app(config_class=DevelopmentConfig):
     app.register_blueprint(post_bp)
     app.register_blueprint(like_bp)
     app.register_blueprint(topic_bp)
+    
+    # Enregistrement des commandes CLI
+    app.cli.add_command(make_admin)
     
     # Route de test pour CSRF
     @app.route('/test_csrf', methods=['POST'])

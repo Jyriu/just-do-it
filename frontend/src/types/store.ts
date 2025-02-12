@@ -1,15 +1,17 @@
-export interface User {
+interface User {
   id: number;
   username: string;
   email: string;
 }
 
-export interface AuthState {
+interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
 }
 
-export interface RootState {
+interface RootState {
   auth: AuthState;
 } 
+
+export type { User, AuthState, RootState };
